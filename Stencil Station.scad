@@ -76,6 +76,13 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 //
+// Version 1.0:
+//   * Uploaded to MakerWorld
+//   * Latest version can be found at https://github.com/rhythmx/stencil-station/
+//   * Added a pen testing stencil and new pen types
+//   * More graph types
+//   * Code quality updates
+//
 // Version 0.5:
 //   * Added a multi-part graphical stencil example
 //   * Added two-side pen track mode for flippable plates
@@ -185,7 +192,7 @@ generators = "Base"; // [None, Base, Graphing, Nyan, Parametrics, Misc]
 
 
 // Selects the current pen type to differentiate between wide and thin pen types.
-current_pen = 0; // [0:Normal, 1:XFine]
+current_pen = 0; // [0:Normal7mmPen, 1:Default1, 2:Default2, 3:Default3, 4:Default4, 5:XFinePen, 6:XFinePencil]
 
 // Hide the rest of the variables from customizer
 module __Customizer_Limit__ () {} 
@@ -211,13 +218,18 @@ module __Customizer_Limit__ () {}
 //       min    max    angle  thickness
 //       width  width
 pens = [
-        [1.5   ,   2.4,   20,       0.8], // Normal (based on .47mm pen, works for fine point sharpie too.
-        [0.7   ,   1.2,   30,       0.4]  // Extra fine (0.3mm pens)
+        [1.3   ,   2.4,   20,       0.8], // Normal (based on .7mm pen, works for fine point sharpie too.
+        [1.25  ,   2.0,   21,       0.7],
+        [1.2   ,   1.8,   22,       0.6],
+        [1.15  ,   1.6,   24,       0.5],
+        [1.1   ,   1.4,   26,       0.4],
+        [1.05  ,   1.2,   28,       0.35],
+        [1.0   ,   1.1,   30,       0.3]  // Extra fine (0.3mm pens)
        ];
 
 // Some aliases for easy reference
 Pen_Normal = 0;
-Pen_XFine  = 1;
+Pen_XFine  = 6;
 
 // Accessor functions to simulated structures because OpenSCAD is a woefully underpowered language
 function pen_track_min_width(pen) = pens[pen][0];
@@ -259,9 +271,9 @@ module PenTrackHalf2Sided(pen) {
     union() {
         mirror([0,1,0])
             translate([0,-(stencil_base_thickness+tolerance)/2,0])
-                    PenTrackHalf(0);
+                    PenTrackHalf(pen);
         translate([0,-(stencil_base_thickness+tolerance)/2,0])
-                PenTrackHalf(0);
+                PenTrackHalf(pen);
     }
 }
 
@@ -722,12 +734,13 @@ module polar_graph_bar(pen,theta) {
     translate([gsx(cos(theta)),gsy(sin(theta)),0]) // offset by radius of 1
         rotate([0,0,theta]) // rotate ray to given angle
             rotate([90,0,90]) // align pen track with X-axis
-                linear_extrude(sx_max*sqrt(2)) // max diag dist
+                linear_extrude(gsx(10)) // max diag dist
                     PenTrack2d2Sided(pen);  
 }
 
 // Plate with 15/30/45 degree angles which can also generate 60/75 degree angles 
-// and in any quadrant if the stencil is flipped and rotated.
+// and in any quadrant if the stencil is flipped and rotated. The lines end at 
+// r=1 because the origin would become too busy otherwise. 
 module PolarGraphAngleStencil(pen) {
     make_stencil() {
          polar_graph_bar(pen,45);  // 45
@@ -775,8 +788,22 @@ module parabola_plate_demo() {
         parametric_function_graph(pen, para4, steps);
         parametric_function_graph(pen, para5, steps);
     }
-
 }
+
+module intersection_graph_demo(pen) {
+    fn1 = function(t) [t, gy( vgx(t)^3/4 + vgx(t)^2/10 -4*vgx(t) ), 0];
+    fn2 = function(t) [t, gy( vgx(t)^2/10 ), 0];
+    make_stencil() {
+        steps = 50;
+        parametric_function_graph(pen, fn1, steps);
+    }
+    translate([stencil_window_size_x+magnet_diameter*2+stencil_base_border*2+3,0,0])
+    make_stencil() {
+        steps = 50;
+        parametric_function_graph(pen, fn2, steps);
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Graphical Multi-Part Stencils 
@@ -844,6 +871,24 @@ module RainbowStencil(pen) {
     }
 }
 
+module PenTrackTester() {
+   make_stencil() {
+        for(r=[Pen_Normal:1:Pen_XFine]) {
+            pennum = Pen_XFine - r; 
+            rotate_extrude(angle=180,$fn=fn_number*2)
+                translate([gsx(r^1.2),0,0])
+                    PenTrack2d(pennum);  
+        }  
+         for(r=[Pen_Normal:1:Pen_XFine]) {
+            pennum = Pen_XFine - r; 
+                translate([gsx(gx_min),gsy(-r^1.2)-2,0])
+                    rotate([90,0,90])
+                    linear_extrude(gsx(gx_window))
+                    PenTrack2d(pennum);  
+        }     
+   }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Outputs
 // 
@@ -852,7 +897,7 @@ module RainbowStencil(pen) {
 
 // Space out the models so they don't overlap
 x_spacing = stencil_window_size_x+magnet_diameter*2+stencil_base_border*2+3;
-y_spacing = stencil_window_size_x+magnet_diameter*2+stencil_base_border*2+3;
+y_spacing = stencil_window_size_y+magnet_diameter*2+stencil_base_border*2+3;
 
 if(generators == "Base") {
   translate([x_spacing*0, y_spacing*0, 0]) 
@@ -864,9 +909,9 @@ if(generators == "Base") {
 
 if(generators == "Graphing") {
   translate([y_spacing*0, y_spacing*1, 0]) 
-  CartesianGraphStencil(current_pen);
+  CartesianGraphStencil(current_pen); // current_pen);
 
-  translate([y_spacing*1, y_spacing*1, 0]) 
+  *translate([y_spacing*1, y_spacing*1, 0]) 
   AlignmentStencil();
 
   translate([y_spacing*0, y_spacing*0, 0]) 
@@ -885,10 +930,12 @@ if(generators == "Parametrics") {
     y3_demo_graph();
     circle_graph_demo();
     parabola_plate_demo(); 
+    intersection_graph_demo(0);
 }
 
 if(generators == "Misc") {
     RainbowStencil(current_pen);
+    PenTrackTester();
 }
 
 echo("Due to zero-width face artifacts in preview mode, you may have to do a render to see the actual geometry.");
