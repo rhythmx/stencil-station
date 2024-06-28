@@ -772,7 +772,7 @@ module circle_graph_demo(pen) {
 
 
 // Example parabola plate
-module parabola_plate_demo() {
+module parabola_plate_demo(pen) {
     para0 = function(t) [t, gy(vgx(t)^2*10 + 2), 0];
     para1 = function(t) [t, gy(vgx(t)^2), 0];
     para2 = function(t) [t, gy(vgx(t)^2/10-2), 0];
@@ -905,20 +905,22 @@ if(generators == "Base") {
 
   translate([x_spacing*1, y_spacing*0, 0]) 
   StencilTopPlate();
+    
+
 }
 
 if(generators == "Graphing") {
-  translate([y_spacing*0, y_spacing*1, 0]) 
+  translate([x_spacing*0, y_spacing*0, 0]) 
   CartesianGraphStencil(current_pen); // current_pen);
 
-  *translate([y_spacing*1, y_spacing*1, 0]) 
-  AlignmentStencil();
-
-  translate([y_spacing*0, y_spacing*0, 0]) 
+  translate([x_spacing*1, y_spacing*0, 0]) 
   PolarGraphCircleStencil(current_pen);
 
-  translate([y_spacing*1, y_spacing*0, 0]) 
+  translate([x_spacing*0, y_spacing*1, 0]) 
   PolarGraphAngleStencil(current_pen); 
+
+  translate([x_spacing*1, y_spacing*1, 0]) 
+  AlignmentStencil();
 
 }
 
@@ -927,15 +929,25 @@ if(generators == "Nyan") {
 }
 
 if(generators == "Parametrics") {
-    y3_demo_graph();
-    circle_graph_demo();
-    parabola_plate_demo(); 
-    intersection_graph_demo(0);
+    translate([y_spacing*0, y_spacing*1, 0]) 
+    y3_demo_graph(current_pen);
+    
+    translate([y_spacing*1, y_spacing*1, 0]) 
+    circle_graph_demo(current_pen);
+
+    translate([y_spacing*0, y_spacing*0, 0]) 
+    parabola_plate_demo(current_pen); 
+
+    * translate([y_spacing*1, y_spacing*0, 0]) 
+    intersection_graph_demo(current_pen);
 }
 
 if(generators == "Misc") {
-    RainbowStencil(current_pen);
-    PenTrackTester();
+  translate([x_spacing*0, y_spacing*0, 0]) 
+  RainbowStencil(current_pen);
+    
+  translate([x_spacing*1, y_spacing*0, 0]) 
+  PenTrackTester();
 }
 
 echo("Due to zero-width face artifacts in preview mode, you may have to do a render to see the actual geometry.");
