@@ -75,6 +75,8 @@
 //         resolution and maybe increase the max objects parameters in OpenSCAD.
 //
 ////////////////////////////////////////////////////////////////////////////////
+// Version 1.1:
+//   * Fix variable size magnet holder generation
 //
 // Version 1.0:
 //   * Uploaded to MakerWorld
@@ -422,18 +424,19 @@ module StencilTemplate() {
                 stencil_base_thickness
             ]);
             
-            exspace = 0;
-            if(magnet_diameter / 2 > stencil_base_border) {
-                exspace = (magnet_diameter / 2) - stencil_base_border + 1; 
-            }
+            // Calc magnet positioning
+            magnet_radius = magnet_diameter / 2;
+            exspace_needed=(magnet_radius > stencil_base_border);
+            exspace=1 + magnet_radius-stencil_base_border*sqrt(2) + stencil_base_border;
+            magnet_support_offset = (exspace_needed) ? exspace : stencil_base_border + 1;
             
             // circle for corner strength and magnet holders
             translate([
-                stencil_window_size_x/2 + stencil_base_border + exspace, 
-                stencil_window_size_y/2 + stencil_base_border + exspace,
+                stencil_window_size_x/2 + magnet_support_offset, 
+                stencil_window_size_y/2 + magnet_support_offset,
             0]) 
                 linear_extrude(stencil_base_thickness) 
-                    circle(stencil_base_border,$fn=fn_number);
+                    circle(max(magnet_diameter/2 +1, stencil_base_border),$fn=fn_number);
             
             
             // Support for frame middle
@@ -464,16 +467,19 @@ module StencilBlackPlate() {
     difference() {
         StencilTemplate();
         
-        exspace = 0;
-        if(magnet_diameter / 2 > stencil_base_border) {
-            exspace = (magnet_diameter / 2) - stencil_base_border + 1; 
-        }
+
+        // Calc magnet positioning
+        magnet_radius = magnet_diameter / 2;
+        exspace_needed=(magnet_radius > stencil_base_border);
+        exspace=1 + magnet_radius-stencil_base_border*sqrt(2) + stencil_base_border;
+        magnet_support_offset = (exspace_needed) ? exspace : stencil_base_border + 1;
+
         
         // Add magnet mounting holes on top
         mirror_corners()
             translate([
-                stencil_window_size_x/2 + stencil_base_border + exspace, 
-                stencil_window_size_y/2 + stencil_base_border + exspace,
+                stencil_window_size_x/2 + magnet_support_offset, 
+                stencil_window_size_y/2 + magnet_support_offset,
                 stencil_base_thickness - magnet_thickness
             ]) 
                 linear_extrude(magnet_thickness+tolerance) 
@@ -504,16 +510,17 @@ module StencilTopPlate() {
                 stencil_base_thickness+tolerance*2
             ]);
 
-        exspace = 0;
-        if(magnet_diameter / 2 > stencil_base_border) {
-            exspace = (magnet_diameter / 2) - stencil_base_border + 1; 
-        }
+        // Calc magnet positioning
+        magnet_radius = magnet_diameter / 2;
+        exspace_needed=(magnet_radius > stencil_base_border);
+        exspace=1 + magnet_radius-stencil_base_border*sqrt(2) + stencil_base_border;
+        magnet_support_offset = (exspace_needed) ? exspace : stencil_base_border + 1;
         
         // Add magnet mounting holes on bottom
         mirror_corners()
             translate([
-                stencil_window_size_x/2 + stencil_base_border + exspace, 
-                stencil_window_size_y/2 + stencil_base_border + exspace,
+                stencil_window_size_x/2 + magnet_support_offset, 
+                stencil_window_size_y/2 + magnet_support_offset,
                 0
             ]) 
                 linear_extrude(magnet_thickness+tolerance) 
